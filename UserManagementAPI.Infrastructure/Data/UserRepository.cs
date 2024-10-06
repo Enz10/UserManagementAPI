@@ -88,13 +88,15 @@ public class UserRepository : IUserRepository
 
         foreach (var user in usersList)
         {
-            dataTable.Rows.Add(user.FirstName, user.LastName, user.Age, user.CreatedAt, user.Country, user.Province, user.City, user.Email, user.PasswordHash);
+            dataTable.Rows.Add(user.FirstName, user.LastName, user.Age, user.CreatedAt, user.Country,
+                user.Province, user.City, user.Email, user.PasswordHash);
         }
 
-        using (var bulkCopy = new SqlBulkCopy(connection))
+        using (var bulkCopy = new SqlBulkCopy(connection,
+            SqlBulkCopyOptions.TableLock | SqlBulkCopyOptions.UseInternalTransaction, null))
         {
             bulkCopy.DestinationTableName = "Users";
-            bulkCopy.BatchSize = Math.Min(1000, usersList.Count);
+            bulkCopy.BatchSize = usersList.Count;
             bulkCopy.BulkCopyTimeout = 60;
 
             bulkCopy.ColumnMappings.Add("FirstName", "FirstName");

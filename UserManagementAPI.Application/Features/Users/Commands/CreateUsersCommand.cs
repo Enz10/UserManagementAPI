@@ -21,20 +21,24 @@ public class CreateUsersCommandHandler : IRequestHandler<CreateUsersCommand, IEn
         _passwordHasher = passwordHasher;
     }
 
-public async Task<IEnumerable<User>> Handle(CreateUsersCommand request, CancellationToken cancellationToken)
-{
-    var users = request.Users.Select(u => new User(
-        u.FirstName,
-        u.LastName,
-        u.Age,
-        DateTime.UtcNow,
-        u.Country,
-        u.Province,
-        u.City,
-        u.Email,
-        _passwordHasher.HashPassword(u.Password)
-    ));
+    public async Task<IEnumerable<User>> Handle(CreateUsersCommand request, CancellationToken cancellationToken)
+    {
+        var users = await Task.WhenAll(request.Users.Select(async u =>
+        {
+            var passwordHash = await Task.Run(() => _passwordHasher.HashPassword(u.Password));
+            return new User(
+                u.FirstName,
+                u.LastName,
+                u.Age,
+                DateTime.UtcNow,
+                u.Country,
+                u.Province,
+                u.City,
+                u.Email,
+                passwordHash
+            );
+        }));
 
-    return await _userRepository.CreateUsersAsync(users);
-}
+        return await _userRepository.CreateUsersAsync(users);
+    }
 }
