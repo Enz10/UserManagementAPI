@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using UserManagementAPI.Core.Domain.Entities;
 using UserManagementAPI.Core.Domain.Interfaces;
+using UserManagementAPI.Domain.Utils;
 
 namespace UserManagementAPI.Infrastructure.Data;
 
@@ -27,7 +28,7 @@ public class UserRepository : IUserRepository
             "SELECT * FROM Users WHERE Id = @Id", new { Id = id });
     }
 
-    public async Task<IEnumerable<User>> GetUsersAsync(int page, int pageSize, int? age, string country)
+    public async Task<PaginatedResult<User>> GetUsersAsync(int page, int pageSize, int? age, string country)
     {
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
@@ -36,11 +37,25 @@ public class UserRepository : IUserRepository
         parameters.Add("@PageSize", pageSize);
         parameters.Add("@Age", age, DbType.Int32, direction: ParameterDirection.Input);
         parameters.Add("@Country", country);
+        parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
+        parameters.Add("@TotalPages", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-        return await connection.QueryAsync<User>(
+        var users = await connection.QueryAsync<User>(
             "sp_GetUsers",
             parameters,
             commandType: CommandType.StoredProcedure);
+
+        var totalCount = parameters.Get<int>("@TotalCount");
+        var totalPages = parameters.Get<int>("@TotalPages");
+
+        return new PaginatedResult<User>
+        {
+            Items = users,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = totalPages,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<User> GetUserByEmailAsync(string email)
