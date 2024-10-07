@@ -12,6 +12,8 @@ public class User
     public string Email { get; private set; }
     public string PasswordHash { get; private set; }
     public DateTime CreatedAt { get; private set; }
+    public DateTime? UpdatedAt { get; private set; }
+    public DateTime? DeletedAt { get; private set; }
 
     public User() { }
 
@@ -31,5 +33,22 @@ public class User
         City = city;
         Email = email;
         PasswordHash = passwordHash;
+    }
+
+    public void Update(string firstName, string lastName, int age, string country, string province, string city, string email)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+        Age = age;
+        Country = country;
+        Province = province;
+        City = city;
+        Email = email;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Delete()
+    {
+        DeletedAt = DateTime.UtcNow;
     }
 }

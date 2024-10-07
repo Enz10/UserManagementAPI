@@ -20,13 +20,13 @@ public class UserRepository : IUserRepository
         _connectionString = _configuration.GetConnectionString("DefaultConnection");
     }
 
-    public async Task<User> GetByIdAsync(int id)
-    {
-        using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync();
-        return await connection.QuerySingleOrDefaultAsync<User>(
-            "SELECT * FROM Users WHERE Id = @Id", new { Id = id });
-    }
+  public async Task<User> GetByIdAsync(int id)
+  {
+      using var connection = new SqlConnection(_connectionString);
+      await connection.OpenAsync();
+      return await connection.QuerySingleOrDefaultAsync<User>(
+          "SELECT * FROM Users WHERE Id = @Id AND DeletedAt IS NULL", new { Id = id });
+  }
 
     public async Task<PaginatedResult<User>> GetUsersAsync(int page, int pageSize, int? age, string country)
     {
@@ -63,7 +63,7 @@ public class UserRepository : IUserRepository
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
         return await connection.QuerySingleOrDefaultAsync<User>(
-            "SELECT * FROM Users WHERE Email = @Email", new { Email = email });
+            "SELECT * FROM Users WHERE Email = @Email AND DeletedAt IS NULL", new { Email = email });
     }
 
     public async Task<User> CreateUserAsync(User user)
@@ -138,23 +138,26 @@ public class UserRepository : IUserRepository
         return insertedUsers;
     }
 
-    public async Task<User> UpdateUserAsync(User user)
-    {
-        using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync();
-        await connection.ExecuteAsync(
-            @"UPDATE Users 
-                      SET FirstName = @FirstName, LastName = @LastName, Age = @Age, CreatedAt = @CreatedAt, 
-                          Country = @Country, Province = @Province, City = @City, Email = @Email, PasswordHash = @PasswordHash 
-                      WHERE Id = @Id",
-            user);
-        return user;
-    }
+  public async Task<User> UpdateUserAsync(User user)
+  {
+      using var connection = new SqlConnection(_connectionString);
+      await connection.OpenAsync();
+      await connection.ExecuteAsync(
+          @"UPDATE Users 
+          SET FirstName = @FirstName, LastName = @LastName, Age = @Age, 
+              Country = @Country, Province = @Province, City = @City, 
+              Email = @Email, UpdatedAt = @UpdatedAt 
+          WHERE Id = @Id",
+          user);
+      return user;
+  }
 
-    public async Task DeleteUserAsync(int id)
-    {
-        using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync();
-        await connection.ExecuteAsync("DELETE FROM Users WHERE Id = @Id", new { Id = id });
-    }
+  public async Task DeleteUserAsync(int id)
+  {
+      using var connection = new SqlConnection(_connectionString);
+      await connection.OpenAsync();
+      await connection.ExecuteAsync(
+          "UPDATE Users SET DeletedAt = @DeletedAt WHERE Id = @Id",
+          new { Id = id, DeletedAt = DateTime.UtcNow });
+  }
 }

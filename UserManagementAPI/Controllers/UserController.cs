@@ -5,6 +5,7 @@ using UserManagementAPI.Application.Models;
 using UserManagementAPI.Core.Application.Commands;
 using UserManagementAPI.Core.Application.Queries;
 using UserManagementAPI.Core.Domain.Entities;
+using UserManagementAPI.Domain.Exceptions;
 
 namespace UserManagementAPI.Controllers;
 
@@ -69,5 +70,36 @@ public class UserController : ControllerBase
         var command = new CreateUserCommand(userDto);
         var createdUser = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetUserById), new { id = createdUser.Id }, createdUser);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserCommand command)
+    {
+        if (id != command.Id)
+        {
+            return BadRequest("Id mismatch");
+        }
+
+        try
+        {
+            var updatedUser = await _mediator.Send(command);
+            return Ok(updatedUser);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        var command = new DeleteUserCommand { Id = id };
+        await _mediator.Send(command);
+        return NoContent();
     }
 }

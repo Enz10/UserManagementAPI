@@ -20,6 +20,7 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, User>
 
     public async Task<User> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
     {
-        return await _userRepository.GetByIdAsync(request.Id);
+        var user = await _userRepository.GetByIdAsync(request.Id);
+        return user?.DeletedAt == null ? user : null;
     }
 }
